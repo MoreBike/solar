@@ -1,0 +1,197 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>Solar and BGE added together</title>
+</head>
+<body>
+
+		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+		<script src="https://code.highcharts.com/stock/highstock.js"></script>
+		<script type="text/javascript">
+$(function() {
+    // Make sure to use local time
+    Highcharts.setOptions({
+        global: {
+            useUTC: false
+        }
+    });
+
+    var seriesOptions = [],
+		yAxisOptions = [],
+		colors = Highcharts.getOptions().colors;
+
+    // Create a timer
+    var start = + new Date();
+    $.when(
+	$.getJSON('power_data.json'),
+	$.getJSON('solar_data.json')
+    ).done(function(BGEdata, SCdata) {
+        seriesOptions[0] = {
+				name: 'BGE',
+				type : 'column',
+				tooltip: {
+					valueDecimals: 4,
+                                        valueSuffix: 'kWh'
+				},
+                                dataGrouping: {
+                                    approximation: 'sum',
+                                    units: [ ['day', [1] ] ]
+                                },
+				data: BGEdata[0]
+	};
+        seriesOptions[1] = {
+				name: 'Solar City',
+				type : 'column',
+				tooltip: {
+					valueDecimals: 4,
+                                        valueSuffix: 'kWh'
+				},
+                                dataGrouping: {
+                                    approximation: 'sum',
+                                    units: [ ['day', [1] ] ]
+                                },
+				data: SCdata[0]
+	};
+	
+        // Create the chart - this is happening in the final getJSON function
+        $('#container').highcharts('StockChart', {
+		chart: {
+		    events: {
+			load: function(chart) {
+			    this.setTitle(null, {
+				text: 'Built chart at '+ (new Date() - start) +'ms'
+			    });
+			}
+		    },
+		    zoomType: 'x'
+		},
+		legend: {
+                    enabled: true
+		},
+		plotOptions: {
+	    	    series: {
+	    		stacking: 'normal'
+	    	    }
+		},
+
+		rangeSelector : {
+		    buttons: [{
+		        type: 'day',
+		        count: 1,
+		        text: '1d'
+		    }, {
+		        type: 'week',
+		        count: 1,
+		        text: '1w'
+		    }, {
+		        type: 'month',
+		        count: 1,
+		        text: '1m'
+		    }, {
+		        type: 'month',
+		        count: 3,
+		        text: '3m'
+		    }, {
+		        type: 'month',
+		        count: 6,
+		        text: '6m'
+		    }, {
+		        type: 'year',
+		        count: 1,
+		        text: '1y'
+		    }, {
+		        type: 'all',
+		        text: 'All'
+		    }],
+		    selected: 6
+		},
+
+		title : {
+		    text : 'Power Usage'
+		},
+
+		yAxis : {
+		    title : {
+			text : 'KilowattHours'
+		    },
+		    plotBands : [{
+			from : 0.6738,
+			to : 0.7419,
+			color : 'rgba(68, 170, 213, 0.2)'
+		    }]
+		},
+
+                series: seriesOptions
+
+
+            });
+
+
+            var chart = $('#container').highcharts();
+
+            var color = false;
+            $('#color').click(function() {
+                chart.series[1].update({
+                    color: color ? null : Highcharts.getOptions().colors[0]
+                });
+                color = !color;
+            });
+
+            // Set type
+            $.each(['line', 'column', 'spline', 'area', 'areaspline', 'scatter'], function (i, type) {
+                $('#' + type).click(function () {
+                    chart.series[0].update({
+                        type: type
+                    });
+                    chart.series[1].update({
+                        type: type
+                    });
+                });
+            });
+            // Set gropuing 
+            $.each(['hour', 'day', 'week', 'month', 'year'], function (i, type) {
+                $('#' + type).click(function () {
+                    chart.series[0].update({
+                        dataGrouping: {
+                            approximation: 'sum',
+                            units: [ [type, [1] ] ]
+			}});
+                    chart.series[1].update({
+                        dataGrouping: {
+                            approximation: 'sum',
+                            units: [ [type, [1] ] ]
+			}});
+                });
+            });
+
+    });
+});
+
+
+		</script>
+<div id="container" style="height: 75vh; min-width: 500px"></div>
+Group Data By: 
+<button id="hour">Hour</button>
+<button id="day">Day</button>
+<button id="week">Week</button>
+<button id="month">Month</button>
+<button id="year">Year</button>
+<p>
+Different Plot Methods:
+<button id="line">Line</button>
+<button id="column">Column</button>
+<button id="spline">Spline</button>
+<button id="area">Area</button>
+<button id="areaspline">Areaspline</button>
+<button id="scatter">Scatter</button>
+<p>
+<button id="color">Toggle color</button>
+<p>
+<a href="index.html">Usage viewed as bar chart with data next to each other.</a>
+<p>
+<a href="rate.html">Rate for various power sources.</a>
+<p>
+<a href="cost.html">Costs and savings.</a>
+</body>
+</html>

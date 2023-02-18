@@ -1,0 +1,264 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>Power Usage Graph</title>
+	</head>
+	<body>
+
+		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+		<script src="https://code.highcharts.com/stock/highstock.js"></script>
+		<script src="jquery.horizontalNav.js"></script>
+		<script type="text/javascript">
+
+
+$(document).ready(function() {
+  $('.nav-wrapper').horizontalNav();
+});
+
+$(function() {
+    // Make sure to use local time
+    Highcharts.setOptions({
+        global: {
+            useUTC: false
+        }
+    });
+
+    var seriesOptions = [];
+    var colors = Highcharts.getOptions().colors;
+
+    // Create a timer
+    var start = + new Date();
+
+    // Since these execute asynchronously, we need to wait for them
+    // all to finish before we build the graph
+    $.when(
+	$.getJSON('power_data.json'),
+	$.getJSON('combined_data.json'),
+	$.getJSON('solar_data.json')
+    ).done(function(BGEdata, combinedData, SCdata) {
+        seriesOptions[0] = {
+	    name: 'BGE',
+	    type : 'column',
+	    tooltip: {
+		valueDecimals: 4,
+                valueSuffix: 'kWh'
+	    },
+// This has been looking ugly
+//	    pointRange: 3600 * 1000,
+	    lineWidth: 1,
+	    data: BGEdata[0]
+	};
+	seriesOptions[1] = {
+	    name: 'Home Usage',
+	    type : 'line',
+	    tooltip: {
+		valueDecimals: 4,
+                valueSuffix: 'kWh'
+	    },
+// This has been looking ugly
+//	    pointRange: 3600 * 1000,
+	    lineWidth: 1,
+	    data: combinedData[0]
+	};
+	seriesOptions[2] = {
+	    name: 'Solar City',
+	    type : 'column',
+	    tooltip: {
+		valueDecimals: 4,
+                valueSuffix: 'kWh'
+	    },
+// This has been looking ugly
+//	    pointRange: 3600 * 1000,
+	    lineWidth: 1,
+	    data: SCdata[0]
+	};
+
+	// Create the chart
+	$('#container').highcharts('StockChart', {
+	    chart: {
+		events: {
+		    load: function(chart) {
+			this.setTitle(null, {
+			    text: 'Built chart at '+ (new Date() - start) +'ms'
+			});
+		    }
+		},
+		zoomType: 'x'
+	    },
+	    legend: {
+		enabled: true
+	    },
+	    plotOptions: {
+		line:   {
+                    dataGrouping: {
+                        approximation: 'sum'
+                    }
+		}
+	    },
+
+	    rangeSelector : {
+		buttons: [{
+		    type: 'day',
+		    count: 1,
+		    text: '1d'
+		}, {
+		    type: 'week',
+		    count: 1,
+		    text: '1w'
+		}, {
+		    type: 'month',
+		    count: 1,
+		    text: '1m'
+		}, {
+		    type: 'month',
+		    count: 3,
+		    text: '3m'
+		}, {
+		    type: 'month',
+		    count: 6,
+		    text: '6m'
+		}, {
+		    type: 'year',
+		    count: 1,
+		    text: '1y'
+		}, {
+		    type: 'all',
+		    text: 'All'
+		}],
+		selected: 3
+	    },
+
+	    title : {
+		text : 'Power Usage'
+	    },
+
+	    yAxis : {
+		title : {
+		    text : 'KilowattHours'
+		},
+		plotBands : [{
+		    from : 0.6738,
+		    to : 0.7419,
+		    color : 'rgba(68, 170, 213, 0.2)'
+		}]
+	    },
+
+            series: seriesOptions
+
+  	});
+
+	var chart = $('#container').highcharts();
+	// Set type
+	$.each(['line', 'column', 'spline', 'area', 'areaspline', 'scatter'], function (i, type) {
+            $('#' + type).click(function () {
+		chart.series[0].update({
+                    type: type
+		});
+		chart.series[1].update({
+                    type: type
+		});
+		chart.series[2].update({
+                    type: type
+		});
+            });
+	});
+	// Set gropuing 
+	$.each(['hour', 'day', 'week', 'month', 'year'], function (i, type) {
+            $('#' + type).click(function () {
+		chart.series[0].update({
+                    dataGrouping: {
+                        approximation: 'sum',
+                        units: [ [type, [1] ] ]
+		    }});
+		chart.series[1].update({
+                    dataGrouping: {
+                        approximation: 'sum',
+                        units: [ [type, [1] ] ]
+		    }});
+		chart.series[2].update({
+                    dataGrouping: {
+                        approximation: 'sum',
+                        units: [ [type, [1] ] ]
+		    }});
+            });
+	});
+
+	$('#bge_toggle').click(function() {
+            var my_series = chart.series[0];
+            if (my_series.visible) {
+		my_series.hide();
+            } else {
+		my_series.show();
+            }
+            chart.redraw()
+	});
+	$('#combined_toggle').click(function() {
+       	    var my_series = chart.series[1];
+            if (my_series.visible) {
+		my_series.hide();
+            } else {
+		my_series.show();
+            }
+            chart.redraw()
+	});
+	$('#sc_toggle').click(function() {
+       	    var my_series = chart.series[2];
+            if (my_series.visible) {
+		my_series.hide();
+            } else {
+		my_series.show();
+            }
+            chart.redraw()
+	});
+    });
+});
+
+	
+
+		</script>
+
+<div id="container" style="height: 70vh; min-width: 500px"></div>
+Group Data By: 
+<button id="hour">Hour</button>
+<button id="day">Day</button>
+<button id="week">Week</button>
+<button id="month">Month</button>
+<button id="year">Year</button>
+<p>
+BGE Data:
+<button id="bge_toggle">Toggle Visibility</button>
+<p>
+Solar City Data:
+<button id="sc_toggle">Toggle Visibility</button>
+<p>
+Combined Data: 
+<button id="combined_toggle">Toggle Visibility</button>
+<p>
+Different Plot Methods:
+<button id="line">Line</button>
+<button id="column">Column</button>
+<button id="spline">Spline</button>
+<button id="area">Area</button>
+<button id="areaspline">Areaspline</button>
+<button id="scatter">Scatter</button>
+<p>
+<a href="added.html">Usage viewed as bar chart with data added.</a>
+<p>
+<a href="rate.html">Rate for various power sources.</a>
+<p>
+<a href="cost.html">Costs and savings.</a>
+		
+            <nav class="horizontal-nav full-width">
+              <ul>
+                <li><a href="#">Navigation Item</a></li>
+                <li><a href="#">Work</a></li>
+                <li><a href="#">Blog</a></li>
+                <li><a href="#">About</a></li>
+                <li><a href="#">Contact</a></li>
+              </ul>
+            </nav>
+
+
+</body>
+</html>
