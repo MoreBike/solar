@@ -156,7 +156,8 @@ $(function() {
             });
 	});
 	// Set gropuing 
-	$.each(['day'], function (i, type) {
+//	$.each(['day'], function (i, type) {
+	$.each(['hour', 'day', 'week', 'month', 'year'], function (i, type) {
             $('#' + type).click(function () {
  		chart.series[0].update({
                     dataGrouping: {
@@ -211,6 +212,14 @@ $(function() {
 		</script>
 
 <div id="container" style="height:80vh; min-width: 500px"></div>
+Group Data By: 
+<button id="hour">Hour</button>
+<button id="day">Day</button>
+<button id="week">Week</button>
+<button id="month">Month</button>
+<button id="year">Year</button>
+<p>
+
 Different Plot Methods:
 <button id="line">Line</button>
 <button id="column">Column</button>
