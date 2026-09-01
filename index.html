@@ -9,6 +9,7 @@
 		<script src="https://code.highcharts.com/stock/4.2.2/highstock.js"></script>
 		<script src="https://code.highcharts.com/stock/4.2.2/modules/exporting.js"></script>
 		<script type="text/javascript">
+
 $(function() {
     // Make sure to use local time
     Highcharts.setOptions({
@@ -23,192 +24,343 @@ $(function() {
     // Create a timer
     var start = + new Date();
 
+    // Read the requested view from the URL.
+    // Examples:
+    //   ?range=all&group=year
+    //   ?range=1y&group=month
+    //   ?range=3m&group=day
+    var urlParams = new URLSearchParams(window.location.search);
+    var requestedRange = urlParams.get('range');
+    var requestedGroup = urlParams.get('group');
+
+    // Valid values for the two controls
+    var validRanges = ['1d', '1w', '1m', '3m', '6m', '1y', 'all'];
+    var validGroups = ['hour', 'day', 'week', 'month', 'year'];
+
+    // Ignore invalid URL parameters
+    if (validRanges.indexOf(requestedRange) === -1) {
+        requestedRange = null;
+    }
+
+    if (validGroups.indexOf(requestedGroup) === -1) {
+        requestedGroup = null;
+    }
+
     // Since these execute asynchronously, we need to wait for them
     // all to finish before we build the graph
     $.when(
-	$.getJSON('power_data.json'),
-	$.getJSON('combined_data.json'),
-	$.getJSON('solar_data.json')
+        $.getJSON('power_data.json'),
+        $.getJSON('combined_data.json'),
+        $.getJSON('solar_data.json')
     ).done(function(BGEdata, combinedData, SCdata) {
-        seriesOptions[0] = {
-	    name: 'BGE',
-	    type : 'column',
-	    tooltip: {
-		valueDecimals: 4,
-                valueSuffix: 'kWh'
-	    },
-// This has been looking ugly
-//	    pointRange: 3600 * 1000,
-	    lineWidth: 1,
-	    data: BGEdata[0]
-	};
-	seriesOptions[1] = {
-	    name: 'Home Usage',
-	    type : 'line',
-	    tooltip: {
-		valueDecimals: 4,
-                valueSuffix: 'kWh'
-	    },
-// This has been looking ugly
-//	    pointRange: 3600 * 1000,
-	    lineWidth: 1,
-	    data: combinedData[0]
-	};
-	seriesOptions[2] = {
-	    name: 'Solar City',
-	    type : 'column',
-	    tooltip: {
-		valueDecimals: 4,
-                valueSuffix: 'kWh'
-	    },
-// This has been looking ugly
-//	    pointRange: 3600 * 1000,
-	    lineWidth: 1,
-	    data: SCdata[0]
-	};
 
-	// Create the chart
-	$('#container').highcharts('StockChart', {
-	    chart: {
-		events: {
-		    load: function(chart) {
-			this.setTitle(null, {
-			    text: 'Built chart at '+ (new Date() - start) +'ms'
-			});
-		    }
-		},
-		zoomType: 'x'
-	    },
-	    legend: {
-		enabled: true
-	    },
-	    plotOptions: {
-		line:   {
+        seriesOptions[0] = {
+            name: 'BGE',
+            type: 'column',
+            tooltip: {
+                valueDecimals: 4,
+                valueSuffix: 'kWh'
+            },
+            lineWidth: 1,
+            data: BGEdata[0]
+        };
+
+        seriesOptions[1] = {
+            name: 'Home Usage',
+            type: 'line',
+            tooltip: {
+                valueDecimals: 4,
+                valueSuffix: 'kWh'
+            },
+            lineWidth: 1,
+            data: combinedData[0]
+        };
+
+        seriesOptions[2] = {
+            name: 'Solar City',
+            type: 'column',
+            tooltip: {
+                valueDecimals: 4,
+                valueSuffix: 'kWh'
+            },
+            lineWidth: 1,
+            data: SCdata[0]
+        };
+
+        // Create the chart
+        $('#container').highcharts('StockChart', {
+            chart: {
+                events: {
+                    load: function(chart) {
+                        this.setTitle(null, {
+                            text: 'Built chart at ' + (new Date() - start) + 'ms'
+                        });
+                    }
+                },
+                zoomType: 'x'
+            },
+
+            legend: {
+                enabled: true
+            },
+
+            plotOptions: {
+                line: {
                     dataGrouping: {
                         approximation: 'sum'
                     }
-		}
-	    },
+                }
+            },
 
-	    rangeSelector : {
-		buttons: [{
-		    type: 'day',
-		    count: 1,
-		    text: '1d'
-		}, {
-		    type: 'week',
-		    count: 1,
-		    text: '1w'
-		}, {
-		    type: 'month',
-		    count: 1,
-		    text: '1m'
-		}, {
-		    type: 'month',
-		    count: 3,
-		    text: '3m'
-		}, {
-		    type: 'month',
-		    count: 6,
-		    text: '6m'
-		}, {
-		    type: 'year',
-		    count: 1,
-		    text: '1y'
-		}, {
-		    type: 'all',
-		    text: 'All'
-		}],
-		selected: 3
-	    },
+            rangeSelector: {
+                buttons: [{
+                    type: 'day',
+                    count: 1,
+                    text: '1d'
+                }, {
+                    type: 'week',
+                    count: 1,
+                    text: '1w'
+                }, {
+                    type: 'month',
+                    count: 1,
+                    text: '1m'
+                }, {
+                    type: 'month',
+                    count: 3,
+                    text: '3m'
+                }, {
+                    type: 'month',
+                    count: 6,
+                    text: '6m'
+                }, {
+                    type: 'year',
+                    count: 1,
+                    text: '1y'
+                }, {
+                    type: 'all',
+                    text: 'All'
+                }],
+                selected: 3
+            },
 
-	    title : {
-		text : 'Power Usage'
-	    },
+            title: {
+                text: 'Power Usage'
+            },
 
-	    yAxis : {
-		title : {
-		    text : 'KilowattHours'
-		},
-		plotBands : [{
-		    from : 0.6738,
-		    to : 0.7419,
-		    color : 'rgba(68, 170, 213, 0.2)'
-		}]
-	    },
+            yAxis: {
+                title: {
+                    text: 'KilowattHours'
+                },
+                plotBands: [{
+                    from: 0.6738,
+                    to: 0.7419,
+                    color: 'rgba(68, 170, 213, 0.2)'
+                }]
+            },
 
             series: seriesOptions
+        });
 
-  	});
+        var chart = $('#container').highcharts();
 
-	var chart = $('#container').highcharts();
-	// Set type
-	$.each(['line', 'column', 'spline', 'area', 'areaspline', 'scatter'], function (i, type) {
-            $('#' + type).click(function () {
-		chart.series[0].update({
-                    type: type
-		});
-		chart.series[1].update({
-                    type: type
-		});
-		chart.series[2].update({
-                    type: type
-		});
+
+        /*
+         * ------------------------------------------------------------
+         * URL handling
+         * ------------------------------------------------------------
+         */
+
+        function updateURL(parameter, value) {
+            var url = new URL(window.location.href);
+
+            if (value) {
+                url.searchParams.set(parameter, value);
+            } else {
+                url.searchParams.delete(parameter);
+            }
+
+            // Change the address bar without reloading the page.
+            window.history.replaceState({}, '', url);
+        }
+
+
+        /*
+         * ------------------------------------------------------------
+         * Grouping buttons
+         * ------------------------------------------------------------
+         */
+
+        function setGrouping(type, updateUrl) {
+
+            $.each(chart.series, function(i, series) {
+                series.update({
+                    dataGrouping: {
+                        approximation: 'sum',
+                        units: [[type, [1]]]
+                    }
+                }, false);
             });
-	});
-	// Set gropuing 
-	$.each(['hour', 'day', 'week', 'month', 'year'], function (i, type) {
-            $('#' + type).click(function () {
-		chart.series[0].update({
-                    dataGrouping: {
-                        approximation: 'sum',
-                        units: [ [type, [1] ] ]
-		    }});
-		chart.series[1].update({
-                    dataGrouping: {
-                        approximation: 'sum',
-                        units: [ [type, [1] ] ]
-		    }});
-		chart.series[2].update({
-                    dataGrouping: {
-                        approximation: 'sum',
-                        units: [ [type, [1] ] ]
-		    }});
-            });
-	});
 
-	$('#bge_toggle').click(function() {
+            chart.redraw();
+
+            if (updateUrl) {
+                updateURL('group', type);
+            }
+        }
+
+
+        $.each(
+            ['hour', 'day', 'week', 'month', 'year'],
+            function(i, type) {
+
+                $('#' + type).click(function() {
+                    setGrouping(type, true);
+                });
+
+            }
+        );
+
+
+        /*
+         * ------------------------------------------------------------
+         * Plot type buttons
+         * ------------------------------------------------------------
+         */
+
+        $.each(
+            ['line', 'column', 'spline', 'area', 'areaspline', 'scatter'],
+            function(i, type) {
+
+                $('#' + type).click(function() {
+
+                    chart.series[0].update({
+                        type: type
+                    });
+
+                    chart.series[1].update({
+                        type: type
+                    });
+
+                    chart.series[2].update({
+                        type: type
+                    });
+
+                });
+
+            }
+        );
+
+
+        /*
+         * ------------------------------------------------------------
+         * Data visibility buttons
+         * ------------------------------------------------------------
+         */
+
+        $('#bge_toggle').click(function() {
             var my_series = chart.series[0];
+
             if (my_series.visible) {
-		my_series.hide();
+                my_series.hide();
             } else {
-		my_series.show();
+                my_series.show();
             }
-            chart.redraw()
-	});
-	$('#combined_toggle').click(function() {
-       	    var my_series = chart.series[1];
+
+            chart.redraw();
+        });
+
+
+        $('#combined_toggle').click(function() {
+            var my_series = chart.series[1];
+
             if (my_series.visible) {
-		my_series.hide();
+                my_series.hide();
             } else {
-		my_series.show();
+                my_series.show();
             }
-            chart.redraw()
-	});
-	$('#sc_toggle').click(function() {
-       	    var my_series = chart.series[2];
+
+            chart.redraw();
+        });
+
+
+        $('#sc_toggle').click(function() {
+            var my_series = chart.series[2];
+
             if (my_series.visible) {
-		my_series.hide();
+                my_series.hide();
             } else {
-		my_series.show();
+                my_series.show();
             }
-            chart.redraw()
-	});
+
+            chart.redraw();
+        });
+
+
+        /*
+         * ------------------------------------------------------------
+         * Range selector / zoom buttons
+         * ------------------------------------------------------------
+         *
+         * Highcharts' range selector has seven buttons:
+         *
+         *   0 = 1d
+         *   1 = 1w
+         *   2 = 1m
+         *   3 = 3m
+         *   4 = 6m
+         *   5 = 1y
+         *   6 = all
+         *
+         * We update the URL whenever one is clicked.
+         */
+
+        var rangeButtons = chart.rangeSelector.buttons;
+
+        $.each(rangeButtons, function(i, button) {
+
+            button.element.onclick = function() {
+
+                var rangeValue = validRanges[i];
+
+                updateURL('range', rangeValue);
+            };
+
+        });
+
+
+        /*
+         * ------------------------------------------------------------
+         * Restore the view from the URL
+         * ------------------------------------------------------------
+         *
+         * Do this AFTER the chart and all buttons exist.
+         */
+
+        if (requestedGroup) {
+            setGrouping(requestedGroup, false);
+        }
+
+
+        if (requestedRange) {
+
+            var rangeIndex = validRanges.indexOf(requestedRange);
+
+            if (rangeIndex >= 0) {
+
+                // Let Highcharts perform the actual range selection.
+                chart.rangeSelector.clickButton(
+                    rangeIndex,
+                    true
+                );
+
+            }
+
+        }
+
     });
+
 });
-
-	
-
 		</script>
 
 <div id="container" style="height: 70vh; min-width: 500px"></div>
